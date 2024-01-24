@@ -1,7 +1,14 @@
 package kimshop.kimcoding.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import kimshop.kimcoding.Dto.ResponseDto;
 import kimshop.kimcoding.domain.user.UserEnum;
+import kimshop.kimcoding.util.CustomResponseUtil;
 import lombok.extern.log4j.Log4j;
+import org.apache.coyote.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -13,10 +20,15 @@ import org.springframework.security.config.annotation.web.configurers.FormLoginC
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HttpBasicConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.cors.CorsConfiguration;
+
+import java.io.IOException;
 
 @Configuration // 빈에 config 등록
 //@Log4j
@@ -42,6 +54,7 @@ public class SecurityConfig {
 
         http
                 .headers(header -> header.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable)) // iframe 허용 안함.
+
                 .csrf(AbstractHttpConfigurer::disable) // enable이면 post맨 작동안함.
 
                 // 자바스크립트의 요청을 허용해 줌. (Cross-Origin Resource Sharing)
@@ -87,13 +100,23 @@ public class SecurityConfig {
                 //.httpBasic(Customizer.withDefaults())
 
 
+
+
                 //여러가지 URI 사용 가능, 다중 사용 가능
                 // "/api/s/**" -> 주소에 s가 들어오면 인증이 필요하다.
                 // "api/admin/**" -> role이 필요함.
                 .authorizeHttpRequests((requests) -> requests
                                 .requestMatchers("/api/s/**").authenticated()
                                 .requestMatchers("/api/admin/**").hasRole(""+UserEnum.ADMIN)  // 최근 공식문서는 ROLE_ 안붙여도 돼서 "" 비워 둠
-                                .anyRequest().permitAll()); // 나머지 요청은 다 허용한다.
+                                .anyRequest().permitAll()) // 나머지 요청은 다 허용한다.
+
+                // Exception 가로채기
+                .exceptionHandling(authenticationManager ->
+                        authenticationManager.authenticationEntryPoint((request, response, authException) ->{
+                            // 실행된 uri가 문자열로 담김 ex). "api/s/hi"
+                            //String uri = request.getRequestURI();
+                                CustomResponseUtil.unAuthentication(response, "로그인을 진행해 주세요.");
+                        }));
 
                 //.build()대신 .getOrBuild() -> SpringBoot 3.x버전
                 return http.build();
