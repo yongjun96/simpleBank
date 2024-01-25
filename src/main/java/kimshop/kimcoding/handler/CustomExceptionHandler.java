@@ -2,6 +2,7 @@ package kimshop.kimcoding.handler;
 
 import kimshop.kimcoding.Dto.ResponseDto;
 import kimshop.kimcoding.ex.CustomApiException;
+import kimshop.kimcoding.ex.CustomValidationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -19,5 +20,11 @@ public class CustomExceptionHandler {
     public ResponseEntity<?> apiException(CustomApiException e){
         log.error(e.getMessage());
         return new ResponseEntity<>(new ResponseDto<>(-1, e.getMessage(), null), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(CustomValidationException.class)
+    public ResponseEntity<?> validationApiException(CustomValidationException e){
+        log.error(e.getMessage());
+        return new ResponseEntity<>(new ResponseDto<>(-1, e.getMessage(), e.getErroMap()), HttpStatus.BAD_REQUEST);
     }
 }

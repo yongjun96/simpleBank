@@ -4,7 +4,6 @@ import kimshop.kimcoding.Dto.user.UserReqDto;
 import kimshop.kimcoding.Dto.user.UserRespDto;
 import kimshop.kimcoding.config.dummy.DummyObject;
 import kimshop.kimcoding.domain.user.User;
-import kimshop.kimcoding.domain.user.UserEnum;
 import kimshop.kimcoding.domain.user.UserRepository;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -13,15 +12,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
 import java.util.Optional;
-
-import static kimshop.kimcoding.service.UserService.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
