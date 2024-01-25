@@ -7,9 +7,11 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED) // 스프링 User 객체생성할 때 비어 있는 생성자로 new를 하기 때문!!
+@NoArgsConstructor(access = AccessLevel.PUBLIC) // 스프링 User 객체생성할 때 비어 있는 생성자로 new를 하기 때문!!
 @Table(name = "user_tb")
 public class User extends BaseTimeEntity {
 
@@ -37,12 +39,14 @@ public class User extends BaseTimeEntity {
 
     // ex). user.builder().username("user1").email("a@naver.com").build();
     @Builder
-    public User(Long id, String username, String password, String email, String fullname, UserEnum role) {
+    public User(Long id, String username, String password, String email, String fullname, UserEnum role, LocalDateTime createdAt, LocalDateTime updateAt) {
         this.id = id;
         this.username = username;
         this.password = password;
         this.email = email;
         this.fullname = fullname;
         this.role = role;
+        this.setCreateAt(createdAt);
+        this.setUpdateAt(updateAt);
     }
 }
