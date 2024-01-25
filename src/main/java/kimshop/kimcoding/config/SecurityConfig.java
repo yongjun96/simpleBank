@@ -100,8 +100,6 @@ public class SecurityConfig {
                 //.httpBasic(Customizer.withDefaults())
 
 
-
-
                 //여러가지 URI 사용 가능, 다중 사용 가능
                 // "/api/s/**" -> 주소에 s가 들어오면 인증이 필요하다.
                 // "api/admin/**" -> role이 필요함.

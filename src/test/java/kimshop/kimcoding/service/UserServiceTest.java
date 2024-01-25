@@ -51,7 +51,7 @@ class UserServiceTest extends DummyObject {
         //when(userRepository.findByUsername(any())).thenReturn(Optional.of(new User())); // 실패 테스트
 
         //stub 2
-        User ssar = newMockUser(1L, "ssar", "쌀");
+        User ssar = newMockUser(100L, "ssar", "쌀");
         when(userRepository.save(any())).thenReturn(ssar);
 
         //when
@@ -59,7 +59,7 @@ class UserServiceTest extends DummyObject {
 
         //then
         System.out.println("테스트 : "+userRespDto);
-        Assertions.assertThat(userRespDto.getId()).isEqualTo(1L);
+        Assertions.assertThat(userRespDto.getId()).isEqualTo(100L);
         Assertions.assertThat(userRespDto.getUsername()).isEqualTo("ssar");
     }
 }

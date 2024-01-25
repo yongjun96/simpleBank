@@ -1,6 +1,9 @@
 package kimshop.kimcoding.Dto.user;
 
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+import jakarta.websocket.OnMessage;
 import kimshop.kimcoding.domain.user.User;
 import kimshop.kimcoding.domain.user.UserEnum;
 import lombok.Getter;
@@ -13,13 +16,16 @@ public class UserReqDto{
     @Setter
     public static class JoinReqDto {
 
-        @NotEmpty(message = "username은 필수 값 입니다.") // null이거나 공백일 수 없다.
+        @Pattern(regexp = "^[a-zA-Z0-9]{2,20}$", message = "영문/숫자 2~20자 이내로 작성해 주세요.")
         private String username;
-        @NotEmpty(message = "password는 필수 값 입니다.")
+
+        @Size(min = 4, max = 20, message = "4~20자 사이로 작성해 주세요.")
         private String password;
-        @NotEmpty(message = "email는 필수 값 입니다.")
+
+        @Pattern(regexp = "^[a-zA-Z0-9]{1,20}@[a-zA-Z0-9]{1,20}\\.[a-zA-Z]{1,10}$", message = "이메일 형식으로 작성해 주세요.")
         private String email;
-        @NotEmpty(message = "fullname는 필수 값 입니다.")
+
+        @Pattern(regexp = "^[a-zA-Z가-힣]{2,20}$", message = "한글/영문 2~20자 이내로 작성해 주세요.")
         private String fullname;
 
         public User toEntity(BCryptPasswordEncoder passwordEncoder) {
