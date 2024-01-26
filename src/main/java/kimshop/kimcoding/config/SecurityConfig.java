@@ -1,34 +1,27 @@
 package kimshop.kimcoding.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import kimshop.kimcoding.Dto.ResponseDto;
+import jakarta.servlet.Filter;
+import kimshop.kimcoding.config.jwt.JwtAuthenticationFilter;
+import kimshop.kimcoding.config.jwt.JwtVO;
 import kimshop.kimcoding.domain.user.UserEnum;
 import kimshop.kimcoding.util.CustomResponseUtil;
-import lombok.extern.log4j.Log4j;
-import org.apache.coyote.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.SecurityConfigurerAdapter;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.FormLoginConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HttpBasicConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.web.AuthenticationEntryPoint;
+import org.springframework.security.web.DefaultSecurityFilterChain;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
-import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
-
-import java.io.IOException;
 
 @Configuration // 빈에 config 등록
 //@Log4j
@@ -44,13 +37,16 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    //JWT 필터 등록이 필요함.
+
 
     // JWT 서버 생성 / Session 사용 안함.
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception{
 
         log.debug("디버그 : filterChain 빈 등록됨.");
+
+        //JWT 필터 등록이 필요함.
+        AuthenticationManager authentication = http.getSharedObject(AuthenticationManager.class);
 
         http
                 .headers(header -> header.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable)) // iframe 허용 안함.
@@ -108,6 +104,9 @@ public class SecurityConfig {
                                 .requestMatchers("/api/admin/**").hasRole(""+UserEnum.ADMIN)  // 최근 공식문서는 ROLE_ 안붙여도 돼서 "" 비워 둠
                                 .anyRequest().permitAll()) // 나머지 요청은 다 허용한다.
 
+                //Jwt필터 적용
+                .addFilter(new JwtAuthenticationFilter(authentication))
+
                 // Exception 가로채기
                 .exceptionHandling(authenticationManager ->
                         authenticationManager.authenticationEntryPoint((request, response, authException) ->{
@@ -115,6 +114,7 @@ public class SecurityConfig {
                             //String uri = request.getRequestURI();
                                 CustomResponseUtil.unAuthentication(response, "로그인을 진행해 주세요.");
                         }));
+
 
                 //.build()대신 .getOrBuild() -> SpringBoot 3.x버전
                 return http.build();
