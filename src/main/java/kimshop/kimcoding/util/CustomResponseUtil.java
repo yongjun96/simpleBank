@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import kimshop.kimcoding.Dto.ResponseDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 
 
 public class CustomResponseUtil {
@@ -28,7 +29,7 @@ public class CustomResponseUtil {
         }
     }
 
-    public static void unAuthentication(HttpServletResponse response, String msg)  {
+    public static void fail(HttpServletResponse response, String msg, HttpStatus httpStatus)  {
 
         try{
             ObjectMapper om = new ObjectMapper();
@@ -38,7 +39,7 @@ public class CustomResponseUtil {
             String responseBody = om.writeValueAsString(responseDto);
 
             response.setContentType("application/json; charset=utf-8");
-            response.setStatus(401);
+            response.setStatus(httpStatus.value());
             response.getWriter().println(responseBody); // 메세지를 공통 응답 Dto로 만들기.
         }catch (Exception e){
             log.error("서버 파싱 에러");

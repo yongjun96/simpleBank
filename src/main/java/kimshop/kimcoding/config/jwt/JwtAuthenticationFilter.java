@@ -12,6 +12,7 @@ import kimshop.kimcoding.config.auth.LoginUser;
 import kimshop.kimcoding.util.CustomResponseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -48,16 +49,22 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
             //강제 로그인
             UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(loginReqDto.getUsername(), loginReqDto.getPassword());
             // UserDetailsService의 loadUserByUSername 호출
-            // JWT 쓴다 해도, 컨트롤러 진입하면 시큐리티의 권한체크, 인증체크 도움을 받을 수 있게 세션을 만든다.
+            // JWT 쓴다 해도, 컨트롤러 진입하면 시큐리티의 권한체크, 인증체크 도움을 받을 수 있게 "세션"을 만든다.
             // 이 세션의 유효기간은 request하고, response하면 끝!
             Authentication authentication = authenticationManager.authenticate(authenticationToken);
 
             return authentication;
 
         }catch (Exception e){
-            // authenticationEntryPoint에 걸린다.
+            // unsuccessfulAuthentication 호출
             throw new InternalAuthenticationServiceException(e.getMessage());
         }
+    }
+
+    //로그인 실패 (nusu로 자동 완성)
+    @Override
+    protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response, AuthenticationException failed) throws IOException, ServletException {
+        CustomResponseUtil.fail(response, "로그인 실패", HttpStatus.UNAUTHORIZED);
     }
 
     //return authentication 잘 작동하면 successfulAuthentication 메서드 호출된다.

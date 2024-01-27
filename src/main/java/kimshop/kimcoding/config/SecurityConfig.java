@@ -1,33 +1,42 @@
 package kimshop.kimcoding.config;
 
-import jakarta.servlet.Filter;
+import kimshop.kimcoding.config.auth.LoginService;
 import kimshop.kimcoding.config.jwt.JwtAuthenticationFilter;
-import kimshop.kimcoding.config.jwt.JwtVO;
+import kimshop.kimcoding.config.jwt.JwtAuthorizationFilter;
 import kimshop.kimcoding.domain.user.UserEnum;
 import kimshop.kimcoding.util.CustomResponseUtil;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.SecurityConfigurerAdapter;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.FormLoginConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HttpBasicConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.web.DefaultSecurityFilterChain;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 
 @Configuration // 빈에 config 등록
-//@Log4j
+@EnableWebSecurity
 public class SecurityConfig {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
+    private LoginService loginService;
+
+    public SecurityConfig(LoginService loginService) {
+        this.loginService = loginService;
+    }
 
     // Ioc 컨테이너에 BCryptPasswordEncoder() 객체가 등록 된다.
     // @Configuration이 붙어 있는 @Bean만 작동한다.
@@ -35,6 +44,14 @@ public class SecurityConfig {
     public BCryptPasswordEncoder passwordEncoder(){
         log.debug("디버그 : BCryptPasswordEncoder 빈 등록");
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(){
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(loginService);
+        authProvider.setPasswordEncoder(passwordEncoder());
+        return new ProviderManager(authProvider);
     }
 
 
@@ -45,11 +62,11 @@ public class SecurityConfig {
 
         log.debug("디버그 : filterChain 빈 등록됨.");
 
-        //JWT 필터 등록이 필요함.
-        AuthenticationManager authentication = http.getSharedObject(AuthenticationManager.class);
-
         http
                 .headers(header -> header.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable)) // iframe 허용 안함.
+
+                //auth매니저 추가
+                //.authenticationManager(authManager)
 
                 .csrf(AbstractHttpConfigurer::disable) // enable이면 post맨 작동안함.
 
@@ -96,6 +113,7 @@ public class SecurityConfig {
                 //.httpBasic(Customizer.withDefaults())
 
 
+
                 //여러가지 URI 사용 가능, 다중 사용 가능
                 // "/api/s/**" -> 주소에 s가 들어오면 인증이 필요하다.
                 // "api/admin/**" -> role이 필요함.
@@ -104,17 +122,22 @@ public class SecurityConfig {
                                 .requestMatchers("/api/admin/**").hasRole(""+UserEnum.ADMIN)  // 최근 공식문서는 ROLE_ 안붙여도 돼서 "" 비워 둠
                                 .anyRequest().permitAll()) // 나머지 요청은 다 허용한다.
 
-                //Jwt필터 적용
-                .addFilter(new JwtAuthenticationFilter(authentication))
+                //JWT 필터 등록이 필요함.
+                .addFilterBefore(new JwtAuthenticationFilter(authenticationManager()), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new JwtAuthorizationFilter(authenticationManager()), BasicAuthenticationFilter.class)
 
                 // Exception 가로채기
+                //인중 실패
                 .exceptionHandling(authenticationManager ->
                         authenticationManager.authenticationEntryPoint((request, response, authException) ->{
                             // 실행된 uri가 문자열로 담김 ex). "api/s/hi"
                             //String uri = request.getRequestURI();
-                                CustomResponseUtil.unAuthentication(response, "로그인을 진행해 주세요.");
+                                CustomResponseUtil.fail(response, "로그인을 진행해 주세요.", HttpStatus.UNAUTHORIZED);
+                        })
+                                // 관한 실패
+                                .accessDeniedHandler((request, response, e) -> {
+                                    CustomResponseUtil.fail(response, "관리자 권한이 없습니다.", HttpStatus.FORBIDDEN);
                         }));
-
 
                 //.build()대신 .getOrBuild() -> SpringBoot 3.x버전
                 return http.build();
